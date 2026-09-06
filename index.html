@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BP Lookup</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: #f4f5f7;
+    margin: 0;
+    padding: 24px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .header {
+    position: absolute;
+    top: 12px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: #666;
+  }
+
+  .user-badge {
+    background: #e8f0fe;
+    color: #1a73e8;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  .user-badge.admin {
+    background: #ffe8e8;
+    color: #c62828;
+  }
+
+  .logout-btn {
+    background: #f0f0f0;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+
+  .logout-btn:hover {
+    background: #e0e0e0;
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #eee;
+  }
+
+  .nav-tabs button {
+    background: none;
+    border: none;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .nav-tabs button.active {
+    color: #1a73e8;
+    border-bottom-color: #1a73e8;
+  }
+
+  .nav-tabs button:hover {
+    color: #333;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    padding: 24px;
+    width: 100%;
+    max-width: 480px;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 4px;
+    color: #1a1a1a;
+  }
+  .hint {
+    font-size: 13px;
+    color: #888;
+    margin: 0 0 16px;
+  }
+  .search-wrap {
+    position: relative;
+  }
+  input[type="text"],
+  input[type="password"] {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+  }
+  input[type="text"]:focus,
+  input[type="password"]:focus {
+    outline: none;
+    border-color: #1a73e8;
+  }
+
+  /* Dropdown */
+  .dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 10;
+    display: none;
+  }
+  .dropdown.open { display: block; }
+  .dropdown-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #f2f2f2;
+  }
+  .dropdown-item:last-child { border-bottom: none; }
+  .dropdown-item:hover,
+  .dropdown-item.active {
+    background: #f0f6ff;
+  }
+  .dropdown-item .name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1a1a1a;
+  }
+  .dropdown-item .id {
+    font-size: 12px;
+    color: #777;
+    margin-top: 2px;
+  }
+  .dropdown-empty {
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #999;
+  }
+
+  #status {
+    margin-top: 12px;
+    font-size: 14px;
+    color: #666;
+    min-height: 18px;
+  }
+  #status.error { color: #c62828; }
+
+  .result {
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 16px;
+    display: none;
+  }
+  .field {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+  }
+  .field .label { color: #666; flex-shrink: 0; }
+  .field .value {
+    text-align: right;
+    font-weight: 500;
+    color: #1a1a1a;
+    word-break: break-word;
+  }
+
+  /* Admin Panel Styles */
+  .admin-panel { display: none; }
+  .admin-panel.active { display: block; }
+  .user-list {
+    margin-top: 16px;
+  }
+  .user-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: #f9f9f9;
+  }
+  .user-info {
+    flex: 1;
+  }
+  .user-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1a1a1a;
+  }
+  .user-meta {
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+  }
+  .role-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #e8f0fe;
+    color: #1a73e8;
+  }
+  .role-badge.admin {
+    background: #ffe8e8;
+    color: #c62828;
+  }
+  .user-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .btn-small {
+    padding: 6px 10px;
+    font-size: 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-delete {
+    background: #ffebee;
+    color: #c62828;
+  }
+  .btn-delete:hover {
+    background: #ffcdd2;
+  }
+
+  .form-section {
+    background: #f9f9f9;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+  }
+  .form-section h3 {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+  .form-group {
+    margin-bottom: 12px;
+  }
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 4px;
+  }
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 13px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+  }
+  .btn-primary {
+    width: 100%;
+    padding: 10px;
+    background: linear-gradient(135deg, #1a73e8, #1557b0);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+  }
+
+  .tab-content {
+    display: none;
+  }
+  .tab-content.active {
+    display: block;
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span>User: <strong id="currentUsername">-</strong></span>
+  <span class="user-badge" id="userBadge">employee</span>
+  <button class="logout-btn" onclick="logout()">Logout</button>
+</div>
+
+<div class="card">
+  <div class="nav-tabs" id="navTabs">
+    <button class="active" onclick="switchTab('search')">🔍 Search</button>
+    <button id="adminTabBtn" class="hidden" onclick="switchTab('admin')">⚙️ Admin Panel</button>
+  </div>
+
+  <!-- SEARCH TAB -->
+  <div id="searchTab" class="tab-content active">
+    <h1>BP Lookup</h1>
+    <p class="hint">Type a BP Name, Opportunity ID, or BP Code to view full customer details.</p>
+
+    <div class="search-wrap">
+      <input type="text" id="searchInput" placeholder="e.g. BP Name, Opportunity ID or BP Code" autocomplete="off" autofocus>
+      <div class="dropdown" id="dropdown"></div>
+    </div>
+
+    <div id="status"></div>
+    <div class="result" id="result"></div>
+  </div>
+
+  <!-- ADMIN TAB -->
+  <div id="adminTab" class="tab-content admin-panel">
+    <h1>⚙️ Admin Panel</h1>
+    <p class="hint">Manage employees and system users</p>
+
+    <!-- Create User Form -->
+    <div class="form-section">
+      <h3>Create New Employee</h3>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="newUsername" placeholder="Enter username">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="newPassword" placeholder="Enter password">
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <select id="newRole">
+          <option value="employee">Employee</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="createUser()">Create User</button>
+      <div id="createMsg" style="margin-top: 12px; font-size: 13px;"></div>
+    </div>
+
+    <!-- Users List -->
+    <div class="form-section">
+      <h3>All Users</h3>
+      <div class="user-list" id="usersList">
+        <p style="color: #888; font-size: 13px;">Loading users...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ----- CONFIG: paste your Apps Script Web App URL here -----
+  const API_URL = "https://script.google.com/macros/s/AKfycbzQr7xr1jR2RvhouVTl8yGnmWxvJhsgdSDnHtSKtNXLEz8HIc-WUMW45KffqWiqe8FCjg/exec";
+  // AUTH_REDIRECT_URL - where to redirect on unauthorized access
+  const AUTH_REDIRECT_URL = "auth.html";
+  // -------------------------------------------------------------
+
+  // SESSION MANAGEMENT
+  let currentUser = null;
+  const searchInput = document.getElementById("searchInput");
+  const dropdownEl = document.getElementById("dropdown");
+  const statusEl = document.getElementById("status");
+  const resultEl = document.getElementById("result");
+  const adminTabBtn = document.getElementById("adminTabBtn");
+  const userBadge = document.getElementById("userBadge");
+  const currentUserSpan = document.getElementById("currentUsername");
+
+  let debounceTimer = null;
+  let activeIndex = -1;
+  let currentMatches = [];
+
+  // Initialize session on page load
+  window.addEventListener("load", () => {
+    checkSession();
+    if (currentUser && currentUser.role === "admin" && new URLSearchParams(window.location.search).get("tab") === "admin") {
+      openAdminPanel();
+    }
+  });
+
+  function checkSession() {
+    const stored = sessionStorage.getItem("currentUser");
+    if (!stored) {
+      window.location.href = AUTH_REDIRECT_URL;
+      return;
+    }
+    try {
+      currentUser = JSON.parse(stored);
+      currentUserSpan.textContent = currentUser.username;
+
+      if (currentUser.role === "admin") {
+        adminTabBtn.classList.remove("hidden");
+        userBadge.classList.add("admin");
+        userBadge.textContent = "ADMIN";
+      } else {
+        userBadge.textContent = "EMPLOYEE";
+      }
+    } catch (e) {
+      window.location.href = AUTH_REDIRECT_URL;
+    }
+  }
+
+  function logout() {
+    if (confirm("Are you sure you want to logout?")) {
+      sessionStorage.removeItem("currentUser");
+      sessionStorage.removeItem("adminPass");
+      window.location.href = AUTH_REDIRECT_URL;
+    }
+  }
+
+  function switchTab(tabName) {
+    document.querySelectorAll(".tab-content").forEach(tab => {
+      tab.classList.remove("active");
+    });
+    document.querySelectorAll(".nav-tabs button").forEach(btn => {
+      btn.classList.remove("active");
+    });
+
+    document.getElementById(tabName + "Tab").classList.add("active");
+    event.target.classList.add("active");
+
+    if (tabName === "admin") {
+      loadUsers();
+    }
+  }
+
+  function openAdminPanel() {
+    document.querySelectorAll(".tab-content").forEach(tab => {
+      tab.classList.remove("active");
+    });
+    document.querySelectorAll(".nav-tabs button").forEach(btn => {
+      btn.classList.remove("active");
+    });
+    document.getElementById("adminTab").classList.add("active");
+    adminTabBtn.classList.add("active");
+    loadUsers();
+  }
+
+  async function createUser() {
+    const username = document.getElementById("newUsername").value.trim();
+    const password = document.getElementById("newPassword").value.trim();
+    const role = document.getElementById("newRole").value;
+    const createMsg = document.getElementById("createMsg");
+
+    if (!username || !password) {
+      createMsg.innerHTML = '<span style="color: #c62828;">❌ Please fill all fields</span>';
+      return;
+    }
+
+    const params = new URLSearchParams({
+      action: "create_user",
+      username: username,
+      password: password,
+      role: role,
+      adminUser: currentUser.username,
+      adminPass: sessionStorage.getItem("adminPass") || ""
+    });
+
+    try {
+      createMsg.innerHTML = '<span style="color: #666;">Creating user...</span>';
+      const res = await fetch(API_URL + "?" + params.toString());
+      const result = await res.json();
+
+      if (result.success) {
+        createMsg.innerHTML = '<span style="color: #1a73e8;">✅ ' + result.message + '</span>';
+        document.getElementById("newUsername").value = "";
+        document.getElementById("newPassword").value = "";
+        setTimeout(() => loadUsers(), 500);
+      } else {
+        createMsg.innerHTML = '<span style="color: #c62828;">❌ ' + result.error + '</span>';
+      }
+    } catch (err) {
+      createMsg.innerHTML = '<span style="color: #c62828;">❌ Error: ' + err.message + '</span>';
+    }
+  }
+
+  async function loadUsers() {
+    const usersList = document.getElementById("usersList");
+    try {
+      const params = new URLSearchParams({
+        action: "list_users",
+        adminUser: currentUser.username,
+        adminPass: sessionStorage.getItem("adminPass") || ""
+      });
+
+      const res = await fetch(API_URL + "?" + params.toString());
+      const result = await res.json();
+
+      if (result.success && result.users) {
+        if (result.users.length === 0) {
+          usersList.innerHTML = '<p style="color: #888; font-size: 13px;">No users found</p>';
+          return;
+        }
+        usersList.innerHTML = result.users.map(user => `
+          <div class="user-item">
+            <div class="user-info">
+              <div class="user-name">${user.username}</div>
+              <div class="user-meta">
+                <span class="role-badge ${user.role === 'admin' ? 'admin' : ''}">${user.role}</span>
+                ${user.status ? ' • ' + user.status : ''}
+              </div>
+            </div>
+            <div class="user-actions">
+              <button class="btn-small btn-delete" onclick="deleteUser('${user.username}')">Delete</button>
+            </div>
+          </div>
+        `).join("");
+      } else {
+        usersList.innerHTML = '<p style="color: #c62828;">Error loading users: ' + (result.error || 'Unknown error') + '</p>';
+      }
+    } catch (err) {
+      usersList.innerHTML = '<p style="color: #c62828;">Error: ' + err.message + '</p>';
+    }
+  }
+
+  async function deleteUser(username) {
+    if (!confirm("Delete user '" + username + "'? This cannot be undone.")) {
+      return;
+    }
+    try {
+      const params = new URLSearchParams({
+        action: "delete_user",
+        username: username,
+        adminUser: currentUser.username,
+        adminPass: sessionStorage.getItem("adminPass") || ""
+      });
+
+      const res = await fetch(API_URL + "?" + params.toString());
+      const result = await res.json();
+
+      if (result.success) {
+        loadUsers();
+      } else {
+        alert("Error: " + result.error);
+      }
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  }
+
+  // ---- Debounced live suggestions as the user types ----
+  searchInput.addEventListener("input", () => {
+    const q = searchInput.value.trim();
+    resultEl.style.display = "none";
+    statusEl.textContent = "";
+    statusEl.className = "";
+
+    clearTimeout(debounceTimer);
+    if (!q) {
+      closeDropdown();
+      return;
+    }
+    debounceTimer = setTimeout(() => fetchSuggestions(q), 250);
+  });
+
+  searchInput.addEventListener("keydown", (e) => {
+    if (!dropdownEl.classList.contains("open")) {
+      if (e.key === "Enter") lookupExact(searchInput.value.trim());
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      moveActive(1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      moveActive(-1);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (activeIndex >= 0 && currentMatches[activeIndex]) {
+        selectMatch(currentMatches[activeIndex]);
+      } else {
+        lookupExact(searchInput.value.trim());
+      }
+    } else if (e.key === "Escape") {
+      closeDropdown();
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".search-wrap")) closeDropdown();
+  });
+
+  async function fetchSuggestions(q) {
+    try {
+      const res = await fetch(API_URL + "?suggest=" + encodeURIComponent(q));
+      const json = await res.json();
+      currentMatches = json.matches || [];
+      renderDropdown(currentMatches);
+    } catch (err) {
+      closeDropdown();
+    }
+  }
+
+  function renderDropdown(matches) {
+    activeIndex = -1;
+    dropdownEl.innerHTML = "";
+
+    if (matches.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "dropdown-empty";
+      empty.textContent = "No matches";
+      dropdownEl.appendChild(empty);
+      dropdownEl.classList.add("open");
+      return;
+    }
+
+    matches.forEach((m, i) => {
+      const item = document.createElement("div");
+      item.className = "dropdown-item";
+      item.dataset.index = i;
+      var idLine = m.bpCode + (m.opportunityId ? " · Opp ID: " + m.opportunityId : "");
+      item.innerHTML =
+        '<div class="name">' + escapeHtml(m.bpName || "(no name)") + '</div>' +
+        '<div class="id">' + escapeHtml(idLine) + '</div>';
+      item.addEventListener("click", () => selectMatch(m));
+      dropdownEl.appendChild(item);
+    });
+    dropdownEl.classList.add("open");
+  }
+
+  function moveActive(delta) {
+    const items = dropdownEl.querySelectorAll(".dropdown-item");
+    if (items.length === 0) return;
+    items[activeIndex]?.classList.remove("active");
+    activeIndex = (activeIndex + delta + items.length) % items.length;
+    items[activeIndex].classList.add("active");
+    items[activeIndex].scrollIntoView({ block: "nearest" });
+  }
+
+  function selectMatch(match) {
+    searchInput.value = match.bpCode || match.bpName || match.opportunityId;
+    closeDropdown();
+    lookupExact(searchInput.value);
+  }
+
+  function closeDropdown() {
+    dropdownEl.classList.remove("open");
+    dropdownEl.innerHTML = "";
+    activeIndex = -1;
+    currentMatches = [];
+  }
+
+  // ---- Exact lookup (on Enter, or after picking a dropdown item) ----
+  async function lookupExact(id) {
+    closeDropdown();
+    resultEl.style.display = "none";
+    resultEl.innerHTML = "";
+
+    if (!id) {
+      statusEl.className = "error";
+      statusEl.textContent = "Type a BP Name, Opportunity ID, or BP Code first.";
+      return;
+    }
+
+    statusEl.className = "";
+    statusEl.textContent = "Searching...";
+
+    try {
+      const res = await fetch(API_URL + "?id=" + encodeURIComponent(id));
+      const json = await res.json();
+
+      if (json.error) {
+        statusEl.className = "error";
+        statusEl.textContent = "Error: " + json.error;
+      } else if (!json.found) {
+        statusEl.className = "error";
+        statusEl.textContent = 'No exact match found for "' + id + '".';
+      } else {
+        statusEl.textContent = "Match found.";
+        renderResult(json.data);
+      }
+    } catch (err) {
+      statusEl.className = "error";
+      statusEl.textContent = "Could not reach the server. Check the API_URL.";
+    }
+  }
+
+  function renderResult(data) {
+    resultEl.innerHTML = "";
+    // Show the key identifying fields first, then everything else in sheet order.
+    const priority = ["BP Code", "BP Name", "Opportunity ID"];
+    const shown = new Set();
+
+    priority.forEach(key => {
+      if (key in data) {
+        addField(key, data[key]);
+        shown.add(key);
+      }
+    });
+
+    Object.keys(data).forEach(key => {
+      if (!shown.has(key) && key !== "_RowNumber") {
+        addField(key, data[key]);
+        shown.add(key);
+      }
+    });
+
+    resultEl.style.display = "block";
+  }
+
+  function addField(label, value) {
+    const row = document.createElement("div");
+    row.className = "field";
+    row.innerHTML =
+      '<span class="label">' + escapeHtml(label) + '</span>' +
+      '<span class="value">' + escapeHtml(String(value ?? "")) + '</span>';
+    resultEl.appendChild(row);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+
+</body>
+</html>

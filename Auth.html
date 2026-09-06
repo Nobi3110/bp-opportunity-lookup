@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Customer Lookup - Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: linear-gradient(135deg, #1e00fe 0%, #fc0101 100%);
+    margin: 0;
+    padding: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  .login-container {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    padding: 40px;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .login-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .login-header h1 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    color: #1a1a1a;
+  }
+
+  .login-header p {
+    font-size: 14px;
+    color: #888;
+    margin: 0;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+  }
+
+  input[type="text"],
+  input[type="password"] {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus,
+  input[type="password"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .login-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+
+  .login-btn:active {
+    transform: translateY(0);
+  }
+
+  .error-msg {
+    background: #fee;
+    color: #c62828;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    border-left: 4px solid #c62828;
+    display: none;
+  }
+
+  .error-msg.show {
+    display: block;
+  }
+
+  .loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .login-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .demo-info {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #666;
+    margin-top: 20px;
+    border: 1px solid #eee;
+  }
+
+  .demo-info strong {
+    color: #333;
+  }
+</style>
+</head>
+<body>
+
+<div class="login-container">
+  <div class="login-header">
+    <h1>🔐 Customer Lookup</h1>
+    <p>Admin & Employee Login Portal</p>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <form id="loginForm" onsubmit="handleLogin(event)">
+    <div class="form-group">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus>
+    </div>
+
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" placeholder="Enter your password" required>
+    </div>
+
+    <button type="submit" class="login-btn" id="loginBtn">
+      <span id="btnText">Login</span>
+    </button>
+  </form>
+
+  <div class="demo-info">
+    <strong>📝 Note:</strong><br>
+    Create employee accounts by logging in as admin.<br>
+    Employees get access to the BP Lookup tool.
+  </div>
+</div>
+
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbzQr7xr1jR2RvhouVTl8yGnmWxvJhsgdSDnHtSKtNXLEz8HIc-WUMW45KffqWiqe8FCjg/exec";
+
+  const loginForm = document.getElementById("loginForm");
+  const errorMsg = document.getElementById("errorMsg");
+  const usernameInput = document.getElementById("username");
+  const passwordInput = document.getElementById("password");
+  const loginBtn = document.getElementById("loginBtn");
+  const btnText = document.getElementById("btnText");
+
+  window.addEventListener("load", () => {
+    const stored = localStorage.getItem("lastUsername");
+    if (stored) {
+      usernameInput.value = stored;
+      passwordInput.focus();
+    }
+  });
+
+  async function handleLogin(e) {
+    e.preventDefault();
+
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value;
+
+    if (!username || !password) {
+      showError("Please enter both username and password");
+      return;
+    }
+
+    loginBtn.disabled = true;
+    btnText.innerHTML = '<span class="loading"></span>';
+
+    try {
+      const res = await fetch(
+        API_URL + "?login=1&username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password)
+      );
+      const result = await res.json();
+
+      if (result.success) {
+        localStorage.setItem("lastUsername", username);
+        sessionStorage.setItem("currentUser", JSON.stringify({
+          username: result.username,
+          role: result.role,
+          loginTime: new Date().getTime()
+        }));
+        sessionStorage.setItem("adminPass", password);
+
+        window.location.href = result.role === "admin"
+          ? "index.html?tab=admin"
+          : "index.html";
+      } else {
+        showError(result.error || "Login failed");
+        loginBtn.disabled = false;
+        btnText.textContent = "Login";
+      }
+    } catch (err) {
+      showError("Connection error. Please check the API URL.");
+      loginBtn.disabled = false;
+      btnText.textContent = "Login";
+    }
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add("show");
+    setTimeout(() => {
+      errorMsg.classList.remove("show");
+    }, 5000);
+  }
+
+  loginForm.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      handleLogin(e);
+    }
+  });
+</script>
+
+</body>
+</html>
